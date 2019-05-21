@@ -50,8 +50,9 @@ namespace QicStreamReader
                     Directory.CreateDirectory(baseDirectory);
                     string currentDirectory = baseDirectory;
 
-                    // And now begins the main sequence of the backup, which consists of a control code,
-                    // followed by the data (if any) that the control code represents.
+                    // And now begins the main sequence of the backup, which consists of a file or directory header,
+                    // and the contents of the file.
+                    // Each new file/directory header is aligned on a block boundary (512 bytes).
 
                     while (stream.Position < stream.Length)
                     {
@@ -98,7 +99,8 @@ namespace QicStreamReader
                                     {
                                         if (!VerifyFileFormat(header.Name, bytes))
                                         {
-                                            Console.WriteLine(stream.Position.ToString("X") + "Warning: file format doesn't match: " + header.Name);
+                                            Console.WriteLine(stream.Position.ToString("X") + " -- Warning: file format doesn't match: " + header.Name);
+                                            Console.ReadKey();
                                         }
                                     }
 
@@ -142,6 +144,9 @@ namespace QicStreamReader
 
                 if (bytes[0] != 0x8 && bytes[0] != 9)
                 {
+                    Console.WriteLine(stream.Position.ToString("X") + " -- Warning: skipping over block.");
+                    Console.ReadKey();
+
                     // skip over this block
                     stream.Seek(0x1fe, SeekOrigin.Current);
                     return;
@@ -166,6 +171,9 @@ namespace QicStreamReader
                     }
                     else
                     {
+                        Console.WriteLine(stream.Position.ToString("X") + " -- Warning: using secondary size field.");
+                        Console.ReadKey();
+
                         // hack?
                         Size += 0x200;
                     }
@@ -212,6 +220,7 @@ namespace QicStreamReader
 
             if (nameLower.EndsWith(".exe") && (bytes[0] != 'M' || bytes[1] != 'Z')) { return false; }
             if (nameLower.EndsWith(".zip") && (bytes[0] != 'P' || bytes[1] != 'K')) { return false; }
+            if (nameLower.EndsWith(".dwg") && (bytes[0] != 'A' || bytes[1] != 'C')) { return false; }
 
             return true;
         }
